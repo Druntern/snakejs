@@ -146,4 +146,42 @@ let levelSet = {
                 break;
         }
     }
+
+    document.addEventListener('touchstart', function(e){
+        var touch = e.changedTouches[0]
+        startX = touch.pageX
+        startY = touch.pageY
+        //e.preventDefault()
+    }, false)
+
+    document.addEventListener('touchmove', function(e){
+        //e.preventDefault()
+    }, false)
+
+    document.addEventListener('touchend', function(e){
+    var touch = e.changedTouches[0]
+    distX = touch.pageX - startX
+    distY = touch.pageY - startY
+
+    if (Math.abs(distX) > Math.abs(distY)) {
+      if (distX > 0 && xvel === 0) {
+        xvel = 1;
+        yvel = 0;
+      }
+      else if (distX < 0 && xvel === 0) {
+        xvel = -1;
+        yvel = 0;
+      }
+    } else {
+      if (distY > 0 && yvel === 0) {
+        yvel = 1;
+        xvel = 0;
+      }
+      else if (distY < 0 && yvel === 0) {
+        yvel = -1;
+        xvel = 0;
+      }
+    }
+    //e.preventDefault();
+    }, false)
 </script>
