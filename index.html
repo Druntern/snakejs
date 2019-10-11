@@ -1,3 +1,38 @@
+<!doctype html>
+<html>
+    <head>
+        <style>
+            .body,
+            .wrapper {
+            /* Break the flow */
+            position: absolute;
+            top: 0px;
+
+            /* Give them all the available space */
+            width: 100%;
+            height: 100%;
+
+            /* Remove the margins if any */
+            margin: 0;
+
+            /* Allow them to scroll down the document */
+            overflow-y: hidden;
+            }
+
+            .body {
+            /* Sending body at the bottom of the stack */
+            z-index: 1;
+            }
+
+            .wrapper {
+            /* Making the wrapper stack above the body */
+            z-index: 2;
+            }
+        </style>
+    </head>
+
+<body class="body">
+<div class="wrapper">
 <canvas id="field" width="400" height="400" style="margin-left:40vw"></canvas>
 <div style="display:flex;">
 <h1 id="score" style="margin-left:40vw;font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif">Score: 0</h1>
@@ -185,3 +220,5 @@ let levelSet = {
     e.preventDefault();
     }, false)
 </script>
+</div>
+</body>
