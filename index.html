@@ -151,11 +151,11 @@ let levelSet = {
         var touch = e.changedTouches[0]
         startX = touch.pageX
         startY = touch.pageY
-        //e.preventDefault()
+        e.preventDefault()
     }, false)
 
     document.addEventListener('touchmove', function(e){
-        //e.preventDefault()
+        e.preventDefault()
     }, false)
 
     document.addEventListener('touchend', function(e){
@@ -182,6 +182,6 @@ let levelSet = {
         xvel = 0;
       }
     }
-    //e.preventDefault();
+    e.preventDefault();
     }, false)
 </script>
