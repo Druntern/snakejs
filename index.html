@@ -64,10 +64,13 @@ let levelSet = {
     },
     4: {
         speed: .1,
+        wall: 0,
         goal: 200
     },
     5: {
-        speed: .8
+        speed: .8,
+        wall: 1,
+        goal: 250
     }
 }
 
@@ -136,6 +139,7 @@ let levelSet = {
             {
                 tail = 4;
                 score = 0;
+                reset();
             }
             context.fillRect(tlength[i].x*grid, tlength[i].y*grid,grid-2,grid-2);     
         }
@@ -146,6 +150,15 @@ let levelSet = {
             score += 10;
             gxpos = Math.floor(Math.random()*tc);
             gypos = Math.floor(Math.random()*tc);
+        }
+
+        if(levelSet[level].wall == 1)
+        {
+            canvas.style.border = '20px solid white';
+        }
+        else
+        {
+            canvas.style.border = '2px solid white';
         }
 
         
