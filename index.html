@@ -101,14 +101,25 @@ let levelSet = {
         xpos += xvel;
         ypos += yvel;
 
-        if(xpos<0)
-            xpos = tc-1;
-        if(xpos>tc-1)
-            xpos = 0
-        if(ypos<0)
-            ypos = tc-1;
-        if(ypos>tc-1)
-            ypos = 0
+        if(levelSet[level].wall == 1)
+        {
+            if(xpos < 0 || xpos > tc - 1 || ypos < 0 || ypos > tc - 1)
+            {
+                tail = 4;
+                score = 0;
+            }
+        }
+        else
+        {
+            if(xpos<0)
+                xpos = tc-1;
+            if(xpos>tc-1)
+                xpos = 0;
+            if(ypos<0)
+                ypos = tc-1;
+            if(ypos>tc-1)
+                ypos = 0;
+        }
         
         tlength.push({x:xpos, y:ypos});
         while(tlength.length>tail)
