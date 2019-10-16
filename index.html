@@ -11,7 +11,7 @@
 
             /* Give them all the available space */
             width: 100%;
-            height: 70%;
+            height: 90%;
 
             /* Remove the margins if any */
             margin: 0;
@@ -204,6 +204,9 @@ let levelSet = {
         level = 1;
         score = 0;
         tail = 4;
+        clearInterval(interval);
+        interval = setInterval(play, 60*levelSet[level].speed);
+        levelTF.textContent= "Level: " + level;
     }
 
     document.addEventListener('touchstart', function(e){
