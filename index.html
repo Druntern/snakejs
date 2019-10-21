@@ -149,11 +149,8 @@ let levelSet = {
         for(var i=0;i<tlength.length;i++)
         {
             if(i != tlength.length-1 && tlength[i].x==xpos && tlength[i].y == ypos)
-            {
-                tail = 4;
-                score = 0;
                 reset();
-            }
+
             context.fillRect(tlength[i].x*grid, tlength[i].y*grid,grid-2,grid-2);     
         }
 
@@ -271,18 +268,74 @@ let levelSet = {
     {
         console.log("X: " + gxpos);
         console.log("Y: " + gypos);
-        if(xpos < gxpos)
-            xvel = 1;
-        else if(xpos > gxpos)
-            xvel = -1;
-        else
-            xvel = 0;
-        if(ypos < gypos)
-            yvel = 1;
-        else if(ypos > gypos)
-            yvel = -1;
-        else
+
+
+        if(xpos != gxpos)
+        {
             yvel = 0;
+            if(xpos < gxpos)
+            {
+                xvel = 1;
+                for(var i=0;i<tlength.length;i++)
+                {
+                    if(i != tlength.length-1 && tlength[i].x==xpos+1 && tlength[i].y == ypos)
+                    {
+                        xvel = 0
+                        for(var i=0;i<tlength.length;i++)
+                        {
+                            yvel = 1;
+                            if(i != tlength.length-1 && tlength[i].x==xpos && tlength[i].y+1 == ypos)
+                            {
+                                yvel = -1;
+                            }
+                        }
+                    }
+                }
+            }
+            else if(xpos > gxpos)
+            {
+                xvel = -1;
+                for(var i=0;i<tlength.length;i++)
+                {
+                    if(i != tlength.length-1 && tlength[i].x==xpos-1 && tlength[i].y == ypos)
+                    {
+                        xvel = 0
+                        for(var i=0;i<tlength.length;i++)
+                        {
+                            yvel = 1;
+                            if(i != tlength.length-1 && tlength[i].x==xpos && tlength[i].y+1 == ypos)
+                            {
+                                yvel = -1;
+                            }
+                        }
+                    }
+                }
+            }
+            else
+                xvel = 0;
+        }
+        else
+        {
+            xvel = 0;
+            if(ypos < gypos)
+            {
+                yvel = 1;
+                for(var i=0;i<tlength.length;i++)
+                {
+                    if(i != tlength.length-1 && tlength[i].y==ypos+1 && tlength[i].x == xpos)
+                    {
+                        yvel = 0
+                    }
+                }
+            }
+            else if(ypos > gypos)
+                yvel = -1;
+            else
+                yvel = 0;
+        }
+        
+
+        
     }
 
     // MOBILE MOVEMENT LISTENERS
