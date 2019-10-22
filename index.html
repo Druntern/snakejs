@@ -38,6 +38,7 @@
 <button id="toggle" onclick="btntoggle()" style="padding:20px;">Pause</button>
 <button onclick="reset()" style="padding:20px;">Reset</button>
 <button id="AItoggle" onclick="AItoggle()" style="padding:20px;">AI Off</button>
+<button id="Astartoggle" onclick="Astartoggle()" style="padding:20px;">A* Off</button>
 <canvas id="field" width="625" height="625" style="margin:auto;display:block;border: 2px solid white"></canvas>
 <div id="data" style="margin-left:0;display:flex;">
     <h1 id="score" style="color:white;margin-left:30vw;margin-right:10vw;font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif">Score: 0</h1>
@@ -81,6 +82,7 @@ let levelSet = {
     var level = 1;
     var gameon = true;
     var AI = false;
+    var Astar = false;
     breakOutDown = false;
     breakOutUp = false;
     var breakOutCount=0;
@@ -88,14 +90,82 @@ let levelSet = {
 
     xvel = 0;
     yvel = 0;
-    xpos = ypos = 15;
+    xpos = ypos = 5;
     gxpos = gypos = 15;
-    gypos = 5;
+
 
     tlength = [];
-    tail = 10;
+    tail = 4;
 
     grid = tc = 25;
+
+
+    // A* CODE
+    function Node(i, j)
+    {
+        this.i = i;
+        this.j = j;
+        this.f = 0;
+        this.g = 0;
+        this.h = 0;
+        this.neighbors = [];
+        this.show = function(color)
+        {
+            context.fillStyle=color;
+            context.fillRect(this.i*grid, this.j*grid,grid-2,grid-2);
+        }
+
+        this.addNeighbors = function(gridAr)
+        {
+            var i = this.i;
+            var j = this.j;
+            if(i < grid- 1)
+            {
+                this.neighbors.push(gridAr[i + 1][j]);
+            }
+            if(i > 0)
+            {
+                this.neighbors.push(gridAr[i - 1][j]);
+            }
+            if(j < grid - 1)
+            {
+                this.neighbors.push(gridAr[i][j + 1]);
+            }
+            if(j > 0)
+            {
+                this.neighbors.push(gridAr[i][j - 1]);
+            }
+            
+        }
+    }
+
+    var gridAr = new Array(grid);
+    for(var i = 0; i < grid; i++)
+        gridAr[i] = new Array(grid);
+    
+    for(var i = 0; i < grid; i++)
+    {
+        for(var j = 0; j < grid; j++)
+        {
+            gridAr[i][j] = new Node(i, j);
+        }
+    }
+
+    for(var i = 0; i < grid; i++)
+    {
+        for(var j = 0; j < grid; j++)
+        {
+            gridAr[i][j].addNeighbors(gridAr);
+        }
+    }
+
+    var openSet = [];
+    var closedSet = [];
+    var start = gridAr[5][5];
+    var end = gridAr[10][10];
+
+    openSet.push(start);
+    //END OF A* CODE
 
     // LOAD FUNCTION
     window.onload = function()
@@ -106,6 +176,7 @@ let levelSet = {
         levelTF = document.getElementById("level");
         toggleBtn = document.getElementById("toggle");
         AIBtn = document.getElementById("AItoggle");
+        AstarBtn = document.getElementById("Astartoggle");
         document.addEventListener("keydown", keyPress);
         interval = setInterval(play, 60*levelSet[level].speed);
     }
@@ -117,18 +188,25 @@ let levelSet = {
         {
             AIrun();
         }
+        else if(Astar == true)
+        {
+            Astarrun();
+        }
+        else
+        {
+            xpos += xvel;
+            ypos += yvel;
+        }
+        
 
-        xpos += xvel;
-        ypos += yvel;
-
-        if(levelSet[level].wall == 1)
+        if(levelSet[level].wall == 1) // IF WALL IS ON AND SKANE HITS IT, GAME OVER
         {
             if(xpos < 0 || xpos > tc - 1 || ypos < 0 || ypos > tc - 1)
             {
                 reset();
             }
         }
-        else
+        else // MAKE SNAKE APPEAR IN THE OTHER SIDE WHEN IT HITS THE WALL
         {
             if(xpos<0)
                 xpos = tc-1;
@@ -147,7 +225,7 @@ let levelSet = {
         }
 
         context.fillStyle = "black";
-        context.fillRect(0, 0, canvas.width, canvas.height);
+        //context.fillRect(0, 0, canvas.width, canvas.height);
 
         context.fillStyle = "white";
         for(var i=0;i<tlength.length;i++)
@@ -201,7 +279,8 @@ let levelSet = {
     // MOVEMENT CONTROLS
     function keyPress(key)
     {
-      
+        if(AI == false)
+        {
             switch(key.keyCode)
             {
                 case 37:    //LEFT
@@ -221,7 +300,7 @@ let levelSet = {
                     yvel = 1;
                     break;
             }
-        
+        }
     }
 
     // RESET
@@ -263,8 +342,26 @@ let levelSet = {
         }
         else
         {
+            if(Astar == true)
+                Astartoggle();
             AI = true;
             AIBtn.textContent= "AI On";
+        }
+    }
+
+    function Astartoggle()
+    {
+        if(Astar == true)
+        {
+            Astar = false;
+            AstarBtn.textContent= "A* Off";
+        }
+        else
+        {
+            if(AI == true)
+                AItoggle();
+            Astar = true;
+            AstarBtn.textContent= "A* On";
         }
     }
 
@@ -405,10 +502,97 @@ let levelSet = {
                 
             }
         }
-        
-        
+    }
 
-        
+    function Astarrun()
+    {
+        if(openSet.length > 0) //KEEP GOING
+        {
+            var lowestIndex = 0;
+            for(var i = 0; i < openSet.length; i++)
+            {
+                if(openSet[i].f < openSet[lowestIndex].f)
+                {
+                    lowestIndex = i;
+                }
+            }
+
+            var current = openSet[lowestIndex];
+
+            if(openSet[lowestIndex] == end)
+            {
+                console.log("DONE!");
+            }
+
+            removeFromArray(openSet, current);
+            closedSet.push(current);
+
+            var neighbors = current.neighbors;
+            for(var i = 0; i < neighbors.length; i++)
+            {
+                var neighbor = neighbors[i];
+
+                if(!closedSet.includes(neighbor))
+                {
+                    var tempG = current.g + 1;
+
+                    if(openSet.includes(neighbor))
+                    {
+                        if(tempG < neighbor.g)
+                        {
+                            neighbor.g = tempG;
+                        }
+                    }
+                    else
+                    {
+                        neighbor.g = tempG;
+                        openSet.push(neighbor);
+                    }
+
+                    neighbor.h = heuristic(neighbor, end);
+                    neighbor.f = neighbor.g + neighbor.h;
+                }
+            }
+        }
+        else
+        {
+            //NO SOLUTION 
+        }
+
+        for(var i = 0; i < grid; i++)
+        {
+            for(var j = 0; j < grid; j++)
+            {
+                gridAr[i][j].show("white");
+            }
+        }
+
+        for(var i = 0; i < closedSet.length; i++)
+        {
+            closedSet[i].show("red");
+        }
+
+        for(var i = 0; i < openSet.length; i++)
+        {
+            openSet[i].show("green");
+        }
+    }
+
+    function removeFromArray(arr, elt)
+    {
+        for(var i = arr.length-1; i >= 0 ; i--)
+        {
+            if(arr[i] == elt)
+            {
+                arr.splice(i, 1);
+            }
+        }
+    }
+
+    function heuristic(a,b)
+    {
+        var d = Math.sqrt( ( (a.i-b.i)*(a.i-b.i) + (a.j-b.j)*(a.j-b.j) ) );
+        return d;
     }
 
     // MOBILE MOVEMENT LISTENERS
@@ -445,6 +629,7 @@ let levelSet = {
       }
     }
     }, false)
+
 </script>
 </div>
 </body>
