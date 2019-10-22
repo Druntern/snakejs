@@ -81,15 +81,19 @@ let levelSet = {
     var level = 1;
     var gameon = true;
     var AI = false;
+    breakOutDown = false;
+    breakOutUp = false;
+    var breakOutCount=0;
     score = 0;
 
-    xvel = 1;
+    xvel = 0;
     yvel = 0;
-    xpos = ypos = 5;
+    xpos = ypos = 15;
     gxpos = gypos = 15;
+    gypos = 5;
 
     tlength = [];
-    tail = 4;
+    tail = 10;
 
     grid = tc = 25;
 
@@ -160,6 +164,7 @@ let levelSet = {
             score += 10;
             gxpos = Math.floor(Math.random()*tc);
             gypos = Math.floor(Math.random()*tc);
+            console.log("OBJECTIVE: X: " + gxpos + "\nY: " + gypos);
         }
 
         if(levelSet[level].wall == 1)
@@ -196,8 +201,7 @@ let levelSet = {
     // MOVEMENT CONTROLS
     function keyPress(key)
     {
-        if(AI == false)
-        {
+      
             switch(key.keyCode)
             {
                 case 37:    //LEFT
@@ -217,7 +221,7 @@ let levelSet = {
                     yvel = 1;
                     break;
             }
-        }
+        
     }
 
     // RESET
@@ -266,73 +270,142 @@ let levelSet = {
 
     function AIrun()
     {
-        console.log("X: " + gxpos);
-        console.log("Y: " + gypos);
-
-
-        if(xpos != gxpos)
+        console.log("X: " + xpos + "\nY: " + ypos);
+        if(xpos == gxpos && ((yvel == 1 && ypos > gypos) || (yvel == -1 && ypos < gypos)))
         {
-            yvel = 0;
-            if(xpos < gxpos)
+            if(yvel==1)
+                breakOutDown = true;
+            else
+                breakOutUp = true;
+        }
+        
+        if(breakOutDown == false && breakOutUp == false)
+        {
+            if(xpos != gxpos)
             {
-                xvel = 1;
-                for(var i=0;i<tlength.length;i++)
+                yvel = 0;
+                if(xpos < gxpos)
                 {
-                    if(i != tlength.length-1 && tlength[i].x==xpos+1 && tlength[i].y == ypos)
+                    xvel = 1;
+                    for(var i=0;i<tlength.length;i++)
                     {
-                        xvel = 0
-                        for(var i=0;i<tlength.length;i++)
+                        if(i != tlength.length-1 && tlength[i].x==xpos+1 && tlength[i].y == ypos)
                         {
+                            xvel = 0
                             yvel = 1;
-                            if(i != tlength.length-1 && tlength[i].x==xpos && tlength[i].y+1 == ypos)
+                            for(var i=0;i<tlength.length;i++)
                             {
-                                yvel = -1;
+                                if(i != tlength.length-1 && tlength[i].x==xpos && tlength[i].y == ypos+1)
+                                {
+                                    yvel = -1;
+                                }
                             }
                         }
                     }
                 }
-            }
-            else if(xpos > gxpos)
-            {
-                xvel = -1;
-                for(var i=0;i<tlength.length;i++)
+                else if(xpos > gxpos)
                 {
-                    if(i != tlength.length-1 && tlength[i].x==xpos-1 && tlength[i].y == ypos)
+                    xvel = -1;
+                    for(var i=0;i<tlength.length;i++)
                     {
-                        xvel = 0
-                        for(var i=0;i<tlength.length;i++)
+                        if(i != tlength.length-1 && tlength[i].x==xpos-1 && tlength[i].y == ypos)
                         {
+                            xvel = 0
                             yvel = 1;
-                            if(i != tlength.length-1 && tlength[i].x==xpos && tlength[i].y+1 == ypos)
+                            for(var i=0;i<tlength.length;i++)
                             {
-                                yvel = -1;
+                                if(i != tlength.length-1 && tlength[i].x==xpos && tlength[i].y == ypos+1)
+                                {
+                                    yvel = -1;
+                                }
                             }
                         }
                     }
                 }
+                else
+                    xvel = 0;
             }
             else
+            {
                 xvel = 0;
+                if(ypos < gypos)
+                {
+                    yvel = 1;
+                    for(var i=0;i<tlength.length;i++)
+                    {
+                        if(i != tlength.length-1 && tlength[i].y==ypos+1 && tlength[i].x == xpos)
+                        {
+                            yvel = 0
+                            xvel = 1;
+                            for(var i=0;i<tlength.length;i++)
+                            {
+                                if(i != tlength.length-1 && tlength[i].x==xpos+1 && tlength[i].y == ypos)
+                                {
+                                    xvel = -1;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                else if(ypos > gypos)
+                {
+                    yvel = -1;
+                    for(var i=0;i<tlength.length;i++)
+                    {
+                        if(i != tlength.length-1 && tlength[i].x==xpos && tlength[i].y == ypos-1)
+                        {
+                            yvel = 0
+                            xvel = 1;
+                            for(var i=0;i<tlength.length;i++)
+                            {
+                                if(i != tlength.length-1 && tlength[i].x==xpos+1 && tlength[i].y == ypos)
+                                {
+                                    xvel = -1;
+                                }
+                            }
+                        }
+                    }
+                }
+                    
+                else
+                    yvel = 0;
+            }
         }
         else
         {
-            xvel = 0;
-            if(ypos < gypos)
+            if(breakOutDown)
             {
-                yvel = 1;
-                for(var i=0;i<tlength.length;i++)
+                if(breakOutCount<2)
                 {
-                    if(i != tlength.length-1 && tlength[i].y==ypos+1 && tlength[i].x == xpos)
-                    {
-                        yvel = 0
-                    }
+                    xvel=1;
+                    yvel=0;
+                    breakOutCount++;
                 }
+                else
+                {
+                    breakOutCount = 0;
+                    breakOutDown = false;
+                }
+                
             }
-            else if(ypos > gypos)
-                yvel = -1;
             else
-                yvel = 0;
+            {
+                if(breakOutCount<2)
+                {
+                    xvel=1;
+                    yvel=0;
+                    breakOutCount++;
+                }
+                else
+                {
+                    breakOutCount = 0;
+                    breakOutUp = false;
+                }
+                
+            }
         }
+        
         
 
         
