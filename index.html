@@ -87,8 +87,10 @@ let levelSet = {
     breakOutUp = false;
     var breakOutCount=0;
     score = 0;
+    var pathFound = false;
+    var steps;
 
-    xvel = 0;
+    xvel = 1;
     yvel = 0;
     xpos = ypos = 5;
     gxpos = gypos = 15;
@@ -109,6 +111,8 @@ let levelSet = {
         this.g = 0;
         this.h = 0;
         this.neighbors = [];
+        this.previous = undefined;
+
         this.show = function(color)
         {
             context.fillStyle=color;
@@ -162,9 +166,10 @@ let levelSet = {
     var openSet = [];
     var closedSet = [];
     var start = gridAr[5][5];
-    var end = gridAr[10][10];
+    var end = gridAr[15][15];
+    var path = [];
 
-    openSet.push(start);
+    //openSet.push(start);
     //END OF A* CODE
 
     // LOAD FUNCTION
@@ -190,7 +195,12 @@ let levelSet = {
         }
         else if(Astar == true)
         {
-            Astarrun();
+            while(pathFound == false)
+                Astarrun();
+            //if(steps > 0)
+                //iteratePath();
+            //console.log(path);
+
         }
         else
         {
@@ -198,6 +208,41 @@ let levelSet = {
             ypos += yvel;
         }
         
+        tlength.push({x:xpos, y:ypos});
+        while(tlength.length>tail)
+        {
+            tlength.shift();
+        }
+
+        context.fillStyle = "black";
+        if(Astar == false)
+            context.fillRect(0, 0, canvas.width, canvas.height);
+
+        context.fillStyle = "white";
+        for(var i=0;i<tlength.length;i++)
+        {
+            if(i != tlength.length-1 && tlength[i].x==xpos && tlength[i].y == ypos)
+                reset();
+
+            context.fillRect(tlength[i].x*grid, tlength[i].y*grid,grid-2,grid-2);     
+        }
+        // GETS THE POINT
+        if(xpos == gxpos && ypos == gypos)
+        {
+            tail++;
+            score += 10;
+            gxpos = Math.floor(Math.random()*tc);
+            gypos = Math.floor(Math.random()*tc);
+            console.log("OBJECTIVE: X: " + gxpos + "\nY: " + gypos);
+            end = gridAr[gxpos][gypos];
+            start = gridAr[xpos][ypos] //MIGHT NOT BE NEEDED
+            pathFound = false;
+        }
+        // WALLS
+        if(levelSet[level].wall == 1)
+            canvas.style.border = '20px solid white';
+        else
+            canvas.style.border = '2px solid white';
 
         if(levelSet[level].wall == 1) // IF WALL IS ON AND SKANE HITS IT, GAME OVER
         {
@@ -217,42 +262,10 @@ let levelSet = {
             if(ypos>tc-1)
                 ypos = 0;
         }
-        
-        tlength.push({x:xpos, y:ypos});
-        while(tlength.length>tail)
-        {
-            tlength.shift();
-        }
-
-        context.fillStyle = "black";
-        //context.fillRect(0, 0, canvas.width, canvas.height);
-
-        context.fillStyle = "white";
-        for(var i=0;i<tlength.length;i++)
-        {
-            if(i != tlength.length-1 && tlength[i].x==xpos && tlength[i].y == ypos)
-                reset();
-
-            context.fillRect(tlength[i].x*grid, tlength[i].y*grid,grid-2,grid-2);     
-        }
-
-        if(xpos == gxpos && ypos == gypos)
-        {
-            tail++;
-            score += 10;
-            gxpos = Math.floor(Math.random()*tc);
-            gypos = Math.floor(Math.random()*tc);
-            console.log("OBJECTIVE: X: " + gxpos + "\nY: " + gypos);
-        }
-
-        if(levelSet[level].wall == 1)
-            canvas.style.border = '20px solid white';
-        else
-            canvas.style.border = '2px solid white';
 
         scoreTF.textContent= "Score: " + score;
 
-        context.fillStyle="red";
+        context.fillStyle="yellow";
         context.fillRect(gxpos*grid,gypos*grid,grid-1,grid-1);
 
         if(score >= levelSet[level].goal)
@@ -355,6 +368,10 @@ let levelSet = {
         {
             Astar = false;
             AstarBtn.textContent= "A* Off";
+            openSet = [];
+            closedSet = [];
+            path = [];
+            pathFound = false;
         }
         else
         {
@@ -362,6 +379,15 @@ let levelSet = {
                 AItoggle();
             Astar = true;
             AstarBtn.textContent= "A* On";
+
+            start = gridAr[xpos][ypos];
+            pathFound = false;
+            closedSet = [];
+            openSet = [];
+            path = [];
+            console.log("Open set BEFORE:" + openSet);
+            openSet.push(start);
+            console.log("Open set AFTER:" + openSet);
         }
     }
 
@@ -504,6 +530,24 @@ let levelSet = {
         }
     }
 
+    function iteratePath()
+    {
+        steps -= 1;
+        console.log("Path length: "+path.length);
+        console.log("Steps: "+steps)
+        xvel = yvel = 0;
+        if(path[steps].i > xpos)
+            xvel = 1;
+        else if(path[steps].i < xpos)
+            xvel = -1;
+        else if(path[steps].j > ypos)
+            yvel = 1;
+        else if(path[steps].j < ypos)
+            yvel = -1;
+        console.log("Current X: " + xpos + " X Goal: " + path[steps].i + " X Vel: "+ xvel);
+        console.log("Current Y: " + ypos + " Y Goal: " + path[steps].j + " Y Vel: "+ yvel);
+    }
+
     function Astarrun()
     {
         if(openSet.length > 0) //KEEP GOING
@@ -521,7 +565,19 @@ let levelSet = {
 
             if(openSet[lowestIndex] == end)
             {
+                // FIND PATH
+                path = [];
+                var temp = current;
+                path.push(temp);
+                while(temp.previous)
+                {
+                    path.push(temp.previous);
+                    temp = temp.previous;
+                }
                 console.log("DONE!");
+                pathFound = true;
+                steps = path.length;
+                console.log(path);
             }
 
             removeFromArray(openSet, current);
@@ -551,6 +607,7 @@ let levelSet = {
 
                     neighbor.h = heuristic(neighbor, end);
                     neighbor.f = neighbor.g + neighbor.h;
+                    neighbor.previous = current;
                 }
             }
         }
@@ -558,6 +615,8 @@ let levelSet = {
         {
             //NO SOLUTION 
         }
+
+// SHOW A* ALGORITHM
 
         for(var i = 0; i < grid; i++)
         {
@@ -576,6 +635,24 @@ let levelSet = {
         {
             openSet[i].show("green");
         }
+
+        // SHOW PATH IN EACH ITERATION
+        /*
+        path = [];
+        var temp = current;
+        path.push(temp);
+        while(temp.previous)
+        {
+            path.push(temp.previous);
+            temp = temp.previous;
+        }
+        */
+
+        for(var i = 0; i < path.length; i++)
+        {
+            path[i].show("blue");
+        }
+
     }
 
     function removeFromArray(arr, elt)
@@ -591,7 +668,8 @@ let levelSet = {
 
     function heuristic(a,b)
     {
-        var d = Math.sqrt( ( (a.i-b.i)*(a.i-b.i) + (a.j-b.j)*(a.j-b.j) ) );
+        //var d = Math.sqrt( ( (a.i-b.i)*(a.i-b.i) + (a.j-b.j)*(a.j-b.j) ) );
+        var d = Math.abs(a.i-b.i) + Math.abs(a.j-b.j); //Manhattan
         return d;
     }
 
