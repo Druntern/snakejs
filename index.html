@@ -222,17 +222,13 @@
                     for(var i=0;i<tlength.length;i++)
                     {
                         if(i != tlength.length-1 && tlength[i].x==xpos && tlength[i].y == ypos)
-                        {
-                            debugger;
                             reset();
-                        }
 
                         context.fillRect(tlength[i].x*grid, tlength[i].y*grid,grid-2,grid-2);
                     }
                     // GETS THE POINT
                     if(xpos == gxpos && ypos == gypos)
                     {
-                        debugger;
                         tail++;
                         score += 10;
                         gxpos = Math.floor(Math.random()*tc);
