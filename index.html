@@ -4,724 +4,768 @@
         <style>
             .body,
             .wrapper {
-                /* Break the flow */
-                background-color: black;
-                position: absolute;
-                top: 0px;
+            /* Break the flow */
+            background-color: black;
+            position: absolute;
+            top: 0px;
 
-                /* Give them all the available space */
-                width: 100%;
-                height: 100%;
+            /* Give them all the available space */
+            width: 100%;
+            height: 100%;
 
-                /* Remove the margins if any */
-                margin: 0;
+            /* Remove the margins if any */
+            margin: 0;
 
-                /* Allow them to scroll down the document */
-                overflow-y: hidden;
+            /* Allow them to scroll down the document */
+            overflow-y: hidden;
             }
 
             .body {
-                /* Sending body at the bottom of the stack */
-                z-index: 1;
+            /* Sending body at the bottom of the stack */
+            z-index: 1;
             }
 
             .wrapper {
-                /* Making the wrapper stack above the body */
-                z-index: 2;
+            /* Making the wrapper stack above the body */
+            z-index: 2;
             }
         </style>
     </head>
 
-    <body class="body">
-        <div class="wrapper">
-            <div id="contentwrapper">
-                <button id="toggle" onclick="btntoggle()" style="padding:20px;">Pause</button>
-                <button onclick="reset()" style="padding:20px;">Reset</button>
-                <button id="AItoggle" onclick="AItoggle()" style="padding:20px;">AI Off</button>
-                <button id="Astartoggle" onclick="Astartoggle()" style="padding:20px;">A* Off</button>
-                <canvas id="field" width="625" height="625" style="margin:auto;display:block;border: 2px solid white"></canvas>
-                <div id="data" style="margin-left:0;display:flex;">
-                    <h1 id="score" style="color:white;margin-left:30vw;margin-right:10vw;font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif">Score: 0</h1>
-                    <h1 id="level" style="color:white;margin-right:10vw;font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif">Level: 1</h1>
-                </div>
-            </div>
-            <script>
+<body class="body">
+<div class="wrapper">
+<div id="contentwrapper">
+<button id="toggle" onclick="btntoggle()" style="padding:20px;">Pause</button>
+<button onclick="reset()" style="padding:20px;">Reset</button>
+<button id="AItoggle" onclick="AItoggle()" style="padding:20px;">AI Off</button>
+<button id="Astartoggle" onclick="Astartoggle()" style="padding:20px;">A* Off</button>
+<button id="pathToggle" onclick="pathToggle()" style="padding:20px;">Show path</button>
+<canvas id="field" width="625" height="625" style="margin:auto;display:block;border: 2px solid white"></canvas>
+<div id="data" style="margin-left:0;display:flex;">
+    <h1 id="score" style="color:white;margin-left:30vw;margin-right:10vw;font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif">Score: 0</h1>
+    <h1 id="level" style="color:white;margin-right:10vw;font-family:Cambria, Cochin, Georgia, Times, 'Times New Roman', serif">Level: 1</h1>
+</div>
+</div>
+<script>
 
-                // LEVEL DETAILS
-                let levelSet = {
-                    1: {
-                        speed: 2,
-                        enemies: 0,
-                        wall: 0,
-                        goal: 50
-                    },
-                    2: {
-                        speed: 1.2,
-                        enemies: 0,
-                        wall: 1,
-                        goal: 100
-                    },
-                    3: {
-                        speed: 1,
-                        enemies: 1,
-                        wall: 1,
-                        goal: 140
-                    },
-                    4: {
-                        speed: .1,
-                        wall: 0,
-                        goal: 200
-                    },
-                    5: {
-                        speed: .8,
-                        wall: 1,
-                        goal: 250
-                    }
-                }
+// LEVEL DETAILS
+let levelSet = {
+    1: {
+        speed: 2,
+        enemies: 0,
+        wall: 0,
+        goal: 50
+    },
+    2: {
+        speed: 1.2,
+        enemies: 0,
+        wall: 1,
+        goal: 100
+    },
+    3: {
+        speed: 1,
+        enemies: 1,
+        wall: 1,
+        goal: 140
+    },
+    4: {
+        speed: .1,
+        wall: 0,
+        goal: 200
+    },
+    5: {
+        speed: .8,
+        wall: 1,
+        goal: 250
+    }
+}
 
-                var level = 1;
-                var gameon = true;
-                var AI = false;
-                var Astar = false;
-                breakOutDown = false;
-                breakOutUp = false;
-                var breakOutCount=0;
-                score = 0;
-                var pathFound = false;
-                var steps;
+    var level = 1;
+    var gameon = true;
+    var AI = false;
+    var Astar = false;
+    breakOutDown = false;
+    breakOutUp = false;
+    var breakOutCount=0;
+    score = 0;
+    var pathFound = false;
+    var steps;
+    var showPath = false;
 
-                xvel = 1;
+    xvel = 1;
+    yvel = 0;
+    xpos = ypos = 5;
+    gxpos = gypos = 15;
+
+
+    tlength = [];
+    tail = 4;
+
+    grid = tc = 25;
+
+
+    // A* CODE
+    function Node(i, j)
+    {
+        this.i = i;
+        this.j = j;
+        this.f = 0;
+        this.g = 0;
+        this.h = 0;
+        this.neighbors = [];
+        this.previous = undefined;
+
+        this.show = function(color)
+        {
+            context.fillStyle=color;
+            context.fillRect(this.i*grid, this.j*grid,grid-2,grid-2);
+        }
+
+        this.addNeighbors = function(gridAr)
+        {
+            var i = this.i;
+            var j = this.j;
+            if(i < grid- 1)
+            {
+                this.neighbors.push(gridAr[i + 1][j]);
+            }
+            if(i > 0)
+            {
+                this.neighbors.push(gridAr[i - 1][j]);
+            }
+            if(j < grid - 1)
+            {
+                this.neighbors.push(gridAr[i][j + 1]);
+            }
+            if(j > 0)
+            {
+                this.neighbors.push(gridAr[i][j - 1]);
+            }
+            
+        }
+    }
+
+    var gridAr = new Array(grid);
+    for(var i = 0; i < grid; i++)
+        gridAr[i] = new Array(grid);
+    
+    for(var i = 0; i < grid; i++)
+    {
+        for(var j = 0; j < grid; j++)
+        {
+            gridAr[i][j] = new Node(i, j);
+        }
+    }
+
+    for(var i = 0; i < grid; i++)
+    {
+        for(var j = 0; j < grid; j++)
+        {
+            gridAr[i][j].addNeighbors(gridAr);
+        }
+    }
+
+    var openSet = [];
+    var closedSet = [];
+    var start = gridAr[5][5];
+    var end = gridAr[15][15];
+    var path = [];
+
+    //openSet.push(start);
+    //END OF A* CODE
+
+    // LOAD FUNCTION
+    window.onload = function()
+    {
+        canvas = document.getElementById("field");
+        context = canvas.getContext("2d");
+        scoreTF = document.getElementById("score");
+        levelTF = document.getElementById("level");
+        toggleBtn = document.getElementById("toggle");
+        AIBtn = document.getElementById("AItoggle");
+        AstarBtn = document.getElementById("Astartoggle");
+        pathBtn = document.getElementById("pathToggle");
+        document.addEventListener("keydown", keyPress);
+        interval = setInterval(play, 60*levelSet[level].speed);
+    }
+
+    // MAIN
+    function play()
+    {
+        if(AI == true)
+        {
+            AIrun();
+            xpos += xvel;
+            ypos += yvel;
+        }
+        else if(Astar == true)
+        {
+            if(showPath == true)
+            {
+                if(pathFound == false)
+                    Astarrun();
+            }
+            else
+            {
+                while(pathFound == false)
+                    Astarrun();
+            }
+                
+            
+            if(pathFound == true && steps > 0)
+            {
+                iteratePath();
+                xpos += xvel;
+                ypos += yvel;
+            }
+                
+            //console.log(path);
+            
+
+        }
+        else
+        {
+            xpos += xvel;
+            ypos += yvel;
+        }
+
+        context.fillStyle = "black";
+        if(showPath == false || (showPath == true && Astar == false))
+            context.fillRect(0, 0, canvas.width, canvas.height);
+
+        context.fillStyle = "white";
+        for(var i=0;i<tlength.length;i++)
+        {
+            if(i != tlength.length-1 && tlength[i].x==xpos && tlength[i].y == ypos)
+                reset();
+
+            context.fillRect(tlength[i].x*grid, tlength[i].y*grid,grid-2,grid-2);     
+        }
+        // GETS THE POINT
+        if(xpos == gxpos && ypos == gypos)
+        {
+            tail++;
+            score += 10;
+            gxpos = Math.floor(Math.random()*tc);
+            gypos = Math.floor(Math.random()*tc);
+            console.log("OBJECTIVE: X: " + gxpos + "\nY: " + gypos);
+            end = gridAr[gxpos][gypos];
+            //start = gridAr[xpos][ypos] //MIGHT NOT BE NEEDED
+            console.log("Start: X: "+ xpos + " Y: " + ypos);
+            pathFound = false;
+        }
+        // WALLS
+        if(levelSet[level].wall == 1)
+            canvas.style.border = '20px solid white';
+        else
+            canvas.style.border = '2px solid white';
+
+        if(levelSet[level].wall == 1) // IF WALL IS ON AND SKANE HITS IT, GAME OVER
+        {
+            if(xpos < 0 || xpos > tc - 1 || ypos < 0 || ypos > tc - 1)
+            {
+                reset();
+            }
+        }
+        else // MAKE SNAKE APPEAR IN THE OTHER SIDE WHEN IT HITS THE WALL
+        {
+            if(xpos<0)
+                xpos = tc-1;
+            if(xpos>tc-1)
+                xpos = 0;
+            if(ypos<0)
+                ypos = tc-1;
+            if(ypos>tc-1)
+                ypos = 0;
+        }
+
+        tlength.push({x:xpos, y:ypos});
+        while(tlength.length>tail)
+        {
+            tlength.shift();
+        }
+
+        scoreTF.textContent= "Score: " + score;
+
+        context.fillStyle="yellow";
+        context.fillRect(gxpos*grid,gypos*grid,grid-2,grid-2);
+
+        if(score >= levelSet[level].goal)
+        {
+            levelUp();
+        }
+
+
+
+
+
+        
+    }
+
+    // LEVEL UP
+    function levelUp()
+    {
+        console.log("Level: " + level);
+        console.log("Level set length: " + Object.keys(levelSet).length);
+        console.log(levelSet);
+        if(level<Object.keys(levelSet).length)
+            level++;
+        console.log("Level: " + level);
+
+        clearInterval(interval);
+        interval = setInterval(play, 60*levelSet[level].speed);
+        levelTF.textContent= "Level: " + level;
+    }
+
+    // MOVEMENT CONTROLS
+    function keyPress(key)
+    {
+        if(AI == false)
+        {
+            switch(key.keyCode)
+            {
+                case 37:    //LEFT
+                    xvel = -1;
+                    yvel = 0;
+                    break;
+                case 38:    //UP
+                    xvel = 0;
+                    yvel = -1;
+                    break;
+                case 39:    //RIGHT
+                    xvel = 1;
+                    yvel = 0;
+                    break;
+                case 40:    //DOWN
+                    xvel = 0;
+                    yvel = 1;
+                    break;
+            }
+        }
+    }
+
+    // RESET
+    function reset()
+    {
+        level = 1;
+        score = 0;
+        tail = 4;
+        if(gameon==false)
+            btntoggle();
+        clearInterval(interval);
+        interval = setInterval(play, 60*levelSet[level].speed);
+        levelTF.textContent= "Level: " + level;
+    }
+
+    // PAUSE TOGGLE
+    function btntoggle()
+    {
+        if(gameon == true)
+        {
+            clearInterval(interval);
+            toggleBtn.textContent= "Resume";
+            gameon = false;
+        }
+        else
+        {
+            interval = setInterval(play, 60*levelSet[level].speed);
+            toggleBtn.textContent= "Pause";
+            gameon = true;
+        }
+    }
+
+    function AItoggle()
+    {
+        if(AI == true)
+        {
+            AI = false;
+            AIBtn.textContent= "AI Off";
+        }
+        else
+        {
+            if(Astar == true)
+                Astartoggle();
+            AI = true;
+            AIBtn.textContent= "AI On";
+        }
+    }
+
+    function pathToggle()
+    {
+        if(showPath == true)
+        {
+            pathBtn.textContent= "Show path";
+            showPath = false;
+        }
+        else
+        {
+            pathBtn.textContent= "Hide path";
+            showPath = true;
+        }
+    }
+
+    function Astartoggle()
+    {
+        if(Astar == true)
+        {
+            Astar = false;
+            AstarBtn.textContent= "A* Off";
+            openSet = [];
+            closedSet = [];
+            path = [];
+            pathFound = false;
+        }
+        else
+        {
+            if(AI == true)
+                AItoggle();
+            Astar = true;
+            AstarBtn.textContent= "A* On";
+
+            start = gridAr[xpos][ypos];
+            pathFound = false;
+            closedSet = [];
+            openSet = [];
+            path = [];
+            console.log("Open set BEFORE:" + openSet);
+            openSet.push(start);
+            console.log("Open set AFTER:" + openSet);
+        }
+    }
+
+    function AIrun()
+    {
+        console.log("X: " + xpos + "\nY: " + ypos);
+        if(xpos == gxpos && ((yvel == 1 && ypos > gypos) || (yvel == -1 && ypos < gypos)))
+        {
+            if(yvel==1)
+                breakOutDown = true;
+            else
+                breakOutUp = true;
+        }
+        
+        if(breakOutDown == false && breakOutUp == false)
+        {
+            if(xpos != gxpos)
+            {
                 yvel = 0;
-                xpos = ypos = 5;
-                gxpos = gypos = 15;
-
-
-                tlength = [];
-                tail = 4;
-
-                grid = tc = 25;
-
-
-                // A* CODE
-                function Node(i, j)
+                if(xpos < gxpos)
                 {
-                    this.i = i;
-                    this.j = j;
-                    this.f = 0;
-                    this.g = 0;
-                    this.h = 0;
-                    this.neighbors = [];
-                    this.previous = undefined;
-
-                    this.show = function(color)
-                    {
-                        context.fillStyle=color;
-                        context.fillRect(this.i*grid, this.j*grid,grid-2,grid-2);
-                    }
-
-                    this.addNeighbors = function(gridAr)
-                    {
-                        var i = this.i;
-                        var j = this.j;
-                        if(i < grid- 1)
-                        {
-                            this.neighbors.push(gridAr[i + 1][j]);
-                        }
-                        if(i > 0)
-                        {
-                            this.neighbors.push(gridAr[i - 1][j]);
-                        }
-                        if(j < grid - 1)
-                        {
-                            this.neighbors.push(gridAr[i][j + 1]);
-                        }
-                        if(j > 0)
-                        {
-                            this.neighbors.push(gridAr[i][j - 1]);
-                        }
-
-                    }
-                }
-
-                var gridAr = new Array(grid);
-                for(var i = 0; i < grid; i++)
-                    gridAr[i] = new Array(grid);
-
-                for(var i = 0; i < grid; i++)
-                {
-                    for(var j = 0; j < grid; j++)
-                    {
-                        gridAr[i][j] = new Node(i, j);
-                    }
-                }
-
-                for(var i = 0; i < grid; i++)
-                {
-                    for(var j = 0; j < grid; j++)
-                    {
-                        gridAr[i][j].addNeighbors(gridAr);
-                    }
-                }
-
-                var openSet = [];
-                var closedSet = [];
-                var start = gridAr[5][5];
-                var end = gridAr[15][15];
-                var path = [];
-
-                //openSet.push(start);
-                //END OF A* CODE
-
-                // LOAD FUNCTION
-                window.onload = function()
-                {
-                    canvas = document.getElementById("field");
-                    context = canvas.getContext("2d");
-                    scoreTF = document.getElementById("score");
-                    levelTF = document.getElementById("level");
-                    toggleBtn = document.getElementById("toggle");
-                    AIBtn = document.getElementById("AItoggle");
-                    AstarBtn = document.getElementById("Astartoggle");
-                    document.addEventListener("keydown", keyPress);
-                    interval = setInterval(play, 60*levelSet[level].speed);
-                }
-
-                // MAIN
-                function play()
-                {
-                    if(AI == true)
-                    {
-                        AIrun();
-                    }
-                    else if(Astar == true)
-                    {
-                        while(pathFound == false)
-                            Astarrun();
-                        if(steps > 0)
-                            iteratePath();
-                        console.log(path);
-
-                    }
-                    //else
-                    //{
-                    xpos += xvel;
-                    ypos += yvel;
-                    //}
-
-                    tlength.push({x:xpos, y:ypos});
-                    while(tlength.length>tail)
-                    {
-                        tlength.shift();
-                    }
-
-                    context.fillStyle = "black";
-                    //if(Astar == false)
-                    context.fillRect(0, 0, canvas.width, canvas.height);
-
-                    context.fillStyle = "white";
+                    xvel = 1;
                     for(var i=0;i<tlength.length;i++)
                     {
-                        if(i != tlength.length-1 && tlength[i].x==xpos && tlength[i].y == ypos)
-                            reset();
-
-                        context.fillRect(tlength[i].x*grid, tlength[i].y*grid,grid-2,grid-2);
-                    }
-                    // GETS THE POINT
-                    if(xpos == gxpos && ypos == gypos)
-                    {
-                        tail++;
-                        score += 10;
-                        gxpos = Math.floor(Math.random()*tc);
-                        gypos = Math.floor(Math.random()*tc);
-                        console.log("OBJECTIVE: X: " + gxpos + "\nY: " + gypos);
-                        end = gridAr[gxpos][gypos];
-                        start = gridAr[xpos][ypos] //MIGHT NOT BE NEEDED
-                        pathFound = false;
-                    }
-                    // WALLS
-                    if(levelSet[level].wall == 1)
-                        canvas.style.border = '20px solid white';
-                    else
-                        canvas.style.border = '2px solid white';
-
-                    if(levelSet[level].wall == 1) // IF WALL IS ON AND SKANE HITS IT, GAME OVER
-                    {
-                        if(xpos < 0 || xpos > tc - 1 || ypos < 0 || ypos > tc - 1)
+                        if(i != tlength.length-1 && tlength[i].x==xpos+1 && tlength[i].y == ypos)
                         {
-                            reset();
-                        }
-                    }
-                    else // MAKE SNAKE APPEAR IN THE OTHER SIDE WHEN IT HITS THE WALL
-                    {
-                        if(xpos<0)
-                            xpos = tc-1;
-                        if(xpos>tc-1)
-                            xpos = 0;
-                        if(ypos<0)
-                            ypos = tc-1;
-                        if(ypos>tc-1)
-                            ypos = 0;
-                    }
-
-                    scoreTF.textContent= "Score: " + score;
-
-                    context.fillStyle="yellow";
-                    context.fillRect(gxpos*grid,gypos*grid,grid-1,grid-1);
-
-                    if(score >= levelSet[level].goal)
-                    {
-                        levelUp();
-                    }
-                }
-
-                // LEVEL UP
-                function levelUp()
-                {
-                    console.log("Level: " + level);
-                    console.log("Level set length: " + Object.keys(levelSet).length);
-                    console.log(levelSet);
-                    if(level<Object.keys(levelSet).length)
-                        level++;
-                    console.log("Level: " + level);
-
-                    clearInterval(interval);
-                    interval = setInterval(play, 60*levelSet[level].speed);
-                    levelTF.textContent= "Level: " + level;
-                }
-
-                // MOVEMENT CONTROLS
-                function keyPress(key)
-                {
-                    if(AI == false)
-                    {
-                        switch(key.keyCode)
-                        {
-                            case 37:    //LEFT
-                                xvel = -1;
-                                yvel = 0;
-                                break;
-                            case 38:    //UP
-                                xvel = 0;
-                                yvel = -1;
-                                break;
-                            case 39:    //RIGHT
-                                xvel = 1;
-                                yvel = 0;
-                                break;
-                            case 40:    //DOWN
-                                xvel = 0;
-                                yvel = 1;
-                                break;
-                        }
-                    }
-                }
-
-                // RESET
-                function reset()
-                {
-                    level = 1;
-                    score = 0;
-                    tail = 4;
-                    if(gameon==false)
-                        btntoggle();
-                    clearInterval(interval);
-                    interval = setInterval(play, 60*levelSet[level].speed);
-                    levelTF.textContent= "Level: " + level;
-                }
-
-                // PAUSE TOGGLE
-                function btntoggle()
-                {
-                    if(gameon == true)
-                    {
-                        clearInterval(interval);
-                        toggleBtn.textContent= "Resume";
-                        gameon = false;
-                    }
-                    else
-                    {
-                        interval = setInterval(play, 60*levelSet[level].speed);
-                        toggleBtn.textContent= "Pause";
-                        gameon = true;
-                    }
-                }
-
-                function AItoggle()
-                {
-                    if(AI == true)
-                    {
-                        AI = false;
-                        AIBtn.textContent= "AI Off";
-                    }
-                    else
-                    {
-                        if(Astar == true)
-                            Astartoggle();
-                        AI = true;
-                        AIBtn.textContent= "AI On";
-                    }
-                }
-
-                function Astartoggle()
-                {
-                    if(Astar == true)
-                    {
-                        Astar = false;
-                        AstarBtn.textContent= "A* Off";
-                        openSet = [];
-                        closedSet = [];
-                        path = [];
-                        pathFound = false;
-                    }
-                    else
-                    {
-                        if(AI == true)
-                            AItoggle();
-                        Astar = true;
-                        AstarBtn.textContent= "A* On";
-
-                        start = gridAr[xpos][ypos];
-                        pathFound = false;
-                        closedSet = [];
-                        openSet = [];
-                        path = [];
-                        console.log("Open set BEFORE:" + openSet);
-                        openSet.push(start);
-                        console.log("Open set AFTER:" + openSet);
-                    }
-                }
-
-                function AIrun()
-                {
-                    console.log("X: " + xpos + "\nY: " + ypos);
-                    if(xpos == gxpos && ((yvel == 1 && ypos > gypos) || (yvel == -1 && ypos < gypos)))
-                    {
-                        if(yvel==1)
-                            breakOutDown = true;
-                        else
-                            breakOutUp = true;
-                    }
-
-                    if(breakOutDown == false && breakOutUp == false)
-                    {
-                        if(xpos != gxpos)
-                        {
-                            yvel = 0;
-                            if(xpos < gxpos)
-                            {
-                                xvel = 1;
-                                for(var i=0;i<tlength.length;i++)
-                                {
-                                    if(i != tlength.length-1 && tlength[i].x==xpos+1 && tlength[i].y == ypos)
-                                    {
-                                        xvel = 0
-                                        yvel = 1;
-                                        for(var i=0;i<tlength.length;i++)
-                                        {
-                                            if(i != tlength.length-1 && tlength[i].x==xpos && tlength[i].y == ypos+1)
-                                            {
-                                                yvel = -1;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            else if(xpos > gxpos)
-                            {
-                                xvel = -1;
-                                for(var i=0;i<tlength.length;i++)
-                                {
-                                    if(i != tlength.length-1 && tlength[i].x==xpos-1 && tlength[i].y == ypos)
-                                    {
-                                        xvel = 0
-                                        yvel = 1;
-                                        for(var i=0;i<tlength.length;i++)
-                                        {
-                                            if(i != tlength.length-1 && tlength[i].x==xpos && tlength[i].y == ypos+1)
-                                            {
-                                                yvel = -1;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            else
-                                xvel = 0;
-                        }
-                        else
-                        {
-                            xvel = 0;
-                            if(ypos < gypos)
-                            {
-                                yvel = 1;
-                                for(var i=0;i<tlength.length;i++)
-                                {
-                                    if(i != tlength.length-1 && tlength[i].y==ypos+1 && tlength[i].x == xpos)
-                                    {
-                                        yvel = 0
-                                        xvel = 1;
-                                        for(var i=0;i<tlength.length;i++)
-                                        {
-                                            if(i != tlength.length-1 && tlength[i].x==xpos+1 && tlength[i].y == ypos)
-                                            {
-                                                xvel = -1;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            else if(ypos > gypos)
-                            {
-                                yvel = -1;
-                                for(var i=0;i<tlength.length;i++)
-                                {
-                                    if(i != tlength.length-1 && tlength[i].x==xpos && tlength[i].y == ypos-1)
-                                    {
-                                        yvel = 0
-                                        xvel = 1;
-                                        for(var i=0;i<tlength.length;i++)
-                                        {
-                                            if(i != tlength.length-1 && tlength[i].x==xpos+1 && tlength[i].y == ypos)
-                                            {
-                                                xvel = -1;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            else
-                                yvel = 0;
-                        }
-                    }
-                    else
-                    {
-                        if(breakOutDown)
-                        {
-                            if(breakOutCount<2)
-                            {
-                                xvel=1;
-                                yvel=0;
-                                breakOutCount++;
-                            }
-                            else
-                            {
-                                breakOutCount = 0;
-                                breakOutDown = false;
-                            }
-
-                        }
-                        else
-                        {
-                            if(breakOutCount<2)
-                            {
-                                xvel=1;
-                                yvel=0;
-                                breakOutCount++;
-                            }
-                            else
-                            {
-                                breakOutCount = 0;
-                                breakOutUp = false;
-                            }
-
-                        }
-                    }
-                }
-
-                function iteratePath()
-                {
-                    steps -= 1;
-                    console.log("Path length: "+path.length);
-                    console.log("Steps: "+steps)
-                    xvel = yvel = 0;
-                    if(path[steps].i > xpos)
-                        xvel = 1;
-                    else if(path[steps].i < xpos)
-                        xvel = -1;
-                    else if(path[steps].j > ypos)
-                        yvel = 1;
-                    else if(path[steps].j < ypos)
-                        yvel = -1;
-                    console.log("Current X: " + xpos + " X Goal: " + path[steps].i + " X Vel: "+ xvel);
-                    console.log("Current Y: " + ypos + " Y Goal: " + path[steps].j + " Y Vel: "+ yvel);
-
-                    if(steps <= 0)
-                    {
-                        start = gridAr[xpos][ypos];
-                        pathFound = false;
-                        for(let i = 0; i < closedSet.length; i++)
-                        {
-                            closedSet[i].previous = undefined;
-                        }
-                        closedSet = [];
-                        openSet = [start];
-                        path = [];
-                    }
-                }
-
-                function Astarrun()
-                {
-                    if(openSet.length > 0) //KEEP GOING
-                    {
-                        var lowestIndex = 0;
-                        for(var i = 0; i < openSet.length; i++)
-                        {
-                            if(openSet[i].f < openSet[lowestIndex].f)
-                            {
-                                lowestIndex = i;
-                            }
-                        }
-
-                        var current = openSet[lowestIndex];
-
-                        if(openSet[lowestIndex] == end)
-                        {
-                            // FIND PATH
-                            path = [];
-                            var temp = current;
-                            path.push(temp);
-                            while(temp.previous)
-                            {
-                                path.push(temp.previous);
-                                temp = temp.previous;
-                            }
-                            console.log("DONE!");
-                            pathFound = true;
-                            steps = path.length;
-                            console.log(path);
-                        }
-
-                        removeFromArray(openSet, current);
-                        closedSet.push(current);
-
-                        var neighbors = current.neighbors;
-                        for(var i = 0; i < neighbors.length; i++)
-                        {
-                            var neighbor = neighbors[i];
-
-                            if(!closedSet.includes(neighbor))
-                            {
-                                var tempG = current.g + 1;
-
-                                if(openSet.includes(neighbor))
-                                {
-                                    if(tempG < neighbor.g)
-                                    {
-                                        neighbor.g = tempG;
-                                    }
-                                }
-                                else
-                                {
-                                    neighbor.g = tempG;
-                                    openSet.push(neighbor);
-                                }
-
-                                neighbor.h = heuristic(neighbor, end);
-                                neighbor.f = neighbor.g + neighbor.h;
-                                neighbor.previous = current;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        //NO SOLUTION
-                    }
-
-        // SHOW A* ALGORITHM
-
-                    for(var i = 0; i < grid; i++)
-                    {
-                        for(var j = 0; j < grid; j++)
-                        {
-                            gridAr[i][j].show("white");
-                        }
-                    }
-
-                    for(var i = 0; i < closedSet.length; i++)
-                    {
-                        closedSet[i].show("red");
-                    }
-
-                    for(var i = 0; i < openSet.length; i++)
-                    {
-                        openSet[i].show("green");
-                    }
-
-                    // SHOW PATH IN EACH ITERATION
-                    /*
-                    path = [];
-                    var temp = current;
-                    path.push(temp);
-                    while(temp.previous)
-                    {
-                        path.push(temp.previous);
-                        temp = temp.previous;
-                    }
-                    */
-
-                    for(var i = 0; i < path.length; i++)
-                    {
-                        path[i].show("blue");
-                    }
-
-                }
-
-                function removeFromArray(arr, elt)
-                {
-                    for(var i = arr.length-1; i >= 0 ; i--)
-                    {
-                        if(arr[i] == elt)
-                        {
-                            arr.splice(i, 1);
-                        }
-                    }
-                }
-
-                function heuristic(a,b)
-                {
-                    //var d = Math.sqrt( ( (a.i-b.i)*(a.i-b.i) + (a.j-b.j)*(a.j-b.j) ) );
-                    var d = Math.abs(a.i-b.i) + Math.abs(a.j-b.j); //Manhattan
-                    return d;
-                }
-
-                // MOBILE MOVEMENT LISTENERS
-                document.addEventListener('touchstart', function(e){
-                    var touch = e.changedTouches[0]
-                    startX = touch.pageX
-                    startY = touch.pageY
-                }, false)
-
-                document.addEventListener('touchmove', function(e){}, false)
-
-                document.addEventListener('touchend', function(e){
-                    var touch = e.changedTouches[0]
-                    distX = touch.pageX - startX
-                    distY = touch.pageY - startY
-
-                    if (Math.abs(distX) > Math.abs(distY)) {
-                        if (distX > 0 && xvel === 0) {
-                            xvel = 1;
-                            yvel = 0;
-                        }
-                        else if (distX < 0 && xvel === 0) {
-                            xvel = -1;
-                            yvel = 0;
-                        }
-                    } else {
-                        if (distY > 0 && yvel === 0) {
+                            xvel = 0
                             yvel = 1;
-                            xvel = 0;
-                        }
-                        else if (distY < 0 && yvel === 0) {
-                            yvel = -1;
-                            xvel = 0;
+                            for(var i=0;i<tlength.length;i++)
+                            {
+                                if(i != tlength.length-1 && tlength[i].x==xpos && tlength[i].y == ypos+1)
+                                {
+                                    yvel = -1;
+                                }
+                            }
                         }
                     }
-                }, false)
+                }
+                else if(xpos > gxpos)
+                {
+                    xvel = -1;
+                    for(var i=0;i<tlength.length;i++)
+                    {
+                        if(i != tlength.length-1 && tlength[i].x==xpos-1 && tlength[i].y == ypos)
+                        {
+                            xvel = 0
+                            yvel = 1;
+                            for(var i=0;i<tlength.length;i++)
+                            {
+                                if(i != tlength.length-1 && tlength[i].x==xpos && tlength[i].y == ypos+1)
+                                {
+                                    yvel = -1;
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                    xvel = 0;
+            }
+            else
+            {
+                xvel = 0;
+                if(ypos < gypos)
+                {
+                    yvel = 1;
+                    for(var i=0;i<tlength.length;i++)
+                    {
+                        if(i != tlength.length-1 && tlength[i].y==ypos+1 && tlength[i].x == xpos)
+                        {
+                            yvel = 0
+                            xvel = 1;
+                            for(var i=0;i<tlength.length;i++)
+                            {
+                                if(i != tlength.length-1 && tlength[i].x==xpos+1 && tlength[i].y == ypos)
+                                {
+                                    xvel = -1;
+                                }
+                            }
+                        }
+                    }
+                }
 
-            </script>
-        </div>
-    </body>
-</html>
+                else if(ypos > gypos)
+                {
+                    yvel = -1;
+                    for(var i=0;i<tlength.length;i++)
+                    {
+                        if(i != tlength.length-1 && tlength[i].x==xpos && tlength[i].y == ypos-1)
+                        {
+                            yvel = 0
+                            xvel = 1;
+                            for(var i=0;i<tlength.length;i++)
+                            {
+                                if(i != tlength.length-1 && tlength[i].x==xpos+1 && tlength[i].y == ypos)
+                                {
+                                    xvel = -1;
+                                }
+                            }
+                        }
+                    }
+                }
+                    
+                else
+                    yvel = 0;
+            }
+        }
+        else
+        {
+            if(breakOutDown)
+            {
+                if(breakOutCount<2)
+                {
+                    xvel=1;
+                    yvel=0;
+                    breakOutCount++;
+                }
+                else
+                {
+                    breakOutCount = 0;
+                    breakOutDown = false;
+                }
+                
+            }
+            else
+            {
+                if(breakOutCount<2)
+                {
+                    xvel=1;
+                    yvel=0;
+                    breakOutCount++;
+                }
+                else
+                {
+                    breakOutCount = 0;
+                    breakOutUp = false;
+                }
+                
+            }
+        }
+    }
+
+    function iteratePath()
+    {
+        steps -= 1;
+        console.log("Path length: "+path.length);
+        console.log("Steps: "+steps)
+        xvel = yvel = 0;
+        if(path[steps].i > xpos)
+            xvel = 1;
+        else if(path[steps].i < xpos)
+            xvel = -1;
+        else if(path[steps].j > ypos)
+            yvel = 1;
+        else if(path[steps].j < ypos)
+            yvel = -1;
+        console.log("Current X: " + xpos + " X Goal: " + path[steps].i + " X Vel: "+ xvel);
+        console.log("Current Y: " + ypos + " Y Goal: " + path[steps].j + " Y Vel: "+ yvel);
+
+        if(steps <= 0)
+        {
+            start = gridAr[xpos][ypos];
+            pathFound = false;
+            for(let i = 0; i < closedSet.length; i++)
+            {
+                closedSet[i].previous = undefined;
+            }
+            closedSet = [];
+            openSet = [start];
+            path = [];
+        }
+    }
+
+    function Astarrun()
+    {
+        if(openSet.length > 0) //KEEP GOING
+        {
+            var lowestIndex = 0;
+            for(var i = 0; i < openSet.length; i++)
+            {
+                if(openSet[i].f < openSet[lowestIndex].f)
+                {
+                    lowestIndex = i;
+                }
+            }
+
+            var current = openSet[lowestIndex];
+
+            if(openSet[lowestIndex] == end)
+            {
+                // FIND PATH
+                path = [];
+                var temp = current;
+                path.push(temp);
+                while(temp.previous)
+                {
+                    path.push(temp.previous);
+                    temp = temp.previous;
+                }
+                console.log("DONE!");
+                pathFound = true;
+                steps = path.length;
+                console.log(path);
+            }
+
+            removeFromArray(openSet, current);
+            closedSet.push(current);
+
+            var neighbors = current.neighbors;
+            for(var i = 0; i < neighbors.length; i++)
+            {
+                var neighbor = neighbors[i];
+
+                if(!closedSet.includes(neighbor))
+                {
+                    var tempG = current.g + 1;
+
+                    if(openSet.includes(neighbor))
+                    {
+                        if(tempG < neighbor.g)
+                        {
+                            neighbor.g = tempG;
+                        }
+                    }
+                    else
+                    {
+                        neighbor.g = tempG;
+                        openSet.push(neighbor);
+                    }
+
+                    neighbor.h = heuristic(neighbor, end);
+                    neighbor.f = neighbor.g + neighbor.h;
+                    neighbor.previous = current;
+                }
+            }
+        }
+        else
+        {
+            //NO SOLUTION 
+        }
+
+// SHOW A* ALGORITHM
+
+if(showPath == true)
+{
+        for(var i = 0; i < grid; i++)
+        {
+            for(var j = 0; j < grid; j++)
+            {
+                gridAr[i][j].show("white");
+            }
+        }
+
+        for(var i = 0; i < closedSet.length; i++)
+        {
+            closedSet[i].show("red");
+        }
+
+        for(var i = 0; i < openSet.length; i++)
+        {
+            openSet[i].show("green");
+        }
+
+        // SHOW PATH IN EACH ITERATION
+        
+            path = [];
+            var temp = current;
+            path.push(temp);
+            while(temp.previous)
+            {
+                path.push(temp.previous);
+                temp = temp.previous;
+            }
+        
+
+        for(var i = 0; i < path.length; i++)
+        {
+            path[i].show("blue");
+        }
+}
+
+    }
+
+    function removeFromArray(arr, elt)
+    {
+        for(var i = arr.length-1; i >= 0 ; i--)
+        {
+            if(arr[i] == elt)
+            {
+                arr.splice(i, 1);
+            }
+        }
+    }
+
+    function heuristic(a,b)
+    {
+        //var d = Math.sqrt( ( (a.i-b.i)*(a.i-b.i) + (a.j-b.j)*(a.j-b.j) ) );
+        var d = Math.abs(a.i-b.i) + Math.abs(a.j-b.j); //Manhattan
+        return d;
+    }
+
+    // MOBILE MOVEMENT LISTENERS
+    document.addEventListener('touchstart', function(e){
+        var touch = e.changedTouches[0]
+        startX = touch.pageX
+        startY = touch.pageY
+    }, false)
+
+    document.addEventListener('touchmove', function(e){}, false)
+
+    document.addEventListener('touchend', function(e){
+    var touch = e.changedTouches[0]
+    distX = touch.pageX - startX
+    distY = touch.pageY - startY
+
+    if (Math.abs(distX) > Math.abs(distY)) {
+      if (distX > 0 && xvel === 0) {
+        xvel = 1;
+        yvel = 0;
+      }
+      else if (distX < 0 && xvel === 0) {
+        xvel = -1;
+        yvel = 0;
+      }
+    } else {
+      if (distY > 0 && yvel === 0) {
+        yvel = 1;
+        xvel = 0;
+      }
+      else if (distY < 0 && yvel === 0) {
+        yvel = -1;
+        xvel = 0;
+      }
+    }
+    }, false)
+
+</script>
+</div>
+</body>
